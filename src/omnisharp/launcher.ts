@@ -45,12 +45,12 @@ export function findLaunchTargets(): Thenable<LaunchTarget[]> {
     const options = Options.Read();
 
     return vscode.workspace.findFiles(
-        /*include*/ '{**/*.sln,**/*.csproj,**/project.json,**/*.csx}', 
+        /*include*/ '{**/*.sln,**/*.csproj,**/project.json,**/*.csx}',
         /*exclude*/ '{**/node_modules/**,**/.git/**,**/bower_components/**}',
         /*maxResults*/ options.maxProjectResults)
-    .then(resources => {
-        return select(resources, vscode.workspace.rootPath);
-    });
+        .then(resources => {
+            return select(resources, vscode.workspace.rootPath);
+        });
 }
 
 function select(resources: vscode.Uri[], rootPath: string): LaunchTarget[] {
@@ -62,7 +62,7 @@ function select(resources: vscode.Uri[], rootPath: string): LaunchTarget[] {
     //
     // TODO:
     //   * It should be possible to choose a .csproj as a launch target
-    //   * It should be possible to choose a .sln file even when no .csproj files are found 
+    //   * It should be possible to choose a .sln file even when no .csproj files are found
     //     within the root.
 
     if (!Array.isArray(resources)) {
@@ -183,14 +183,17 @@ function launch(cwd: string, args: string[]): Promise<LaunchResult> {
     return PlatformInformation.GetCurrent().then(platformInfo => {
         const options = Options.Read();
 
-        if (options.useEditorFormattingSettings) 
-        {
+        if (options.useEditorFormattingSettings) {
             let globalConfig = vscode.workspace.getConfiguration();
             let csharpConfig = vscode.workspace.getConfiguration('[csharp]');
 
             args.push(`formattingOptions:useTabs=${!getConfigurationValue(globalConfig, csharpConfig, 'editor.insertSpaces', true)}`);
             args.push(`formattingOptions:tabSize=${getConfigurationValue(globalConfig, csharpConfig, 'editor.tabSize', 4)}`);
             args.push(`formattingOptions:indentationSize=${getConfigurationValue(globalConfig, csharpConfig, 'editor.tabSize', 4)}`);
+        }
+
+        if (options.useDocker) {
+            return launchDocker(options.dockerImage, cwd, args);
         }
 
         if (options.path && options.useMono) {
@@ -210,11 +213,11 @@ function launch(cwd: string, args: string[]): Promise<LaunchResult> {
 
 function getConfigurationValue(globalConfig: vscode.WorkspaceConfiguration, csharpConfig: vscode.WorkspaceConfiguration,
     configurationPath: string, defaultValue: any): any {
-    
+
     if (csharpConfig[configurationPath] != undefined) {
         return csharpConfig[configurationPath];
     }
-    
+
     return globalConfig.get(configurationPath, defaultValue);
 }
 
@@ -231,7 +234,7 @@ function launchWindows(launchPath: string, cwd: string, args: string[]): LaunchR
         const hasSpaceWithoutQuotes = /^[^"].* .*[^"]/;
         return hasSpaceWithoutQuotes.test(arg)
             ? `"${arg}"`
-            : arg.replace("&","^&");
+            : arg.replace("&", "^&");
     }
 
     let argsCopy = args.slice(0); // create copy of args
@@ -267,6 +270,25 @@ function launchNix(launchPath: string, cwd: string, args: string[]): LaunchResul
         usingMono: true
     };
 }
+
+function launchDocker(imageName: string, cwd: string, args: string[]): LaunchResult {
+    const [, workspace, ...omnisharpArgs] = args;
+    const dockerArgs = [
+        'run', '--rm', '-i', '--pid=host', '-v', `${workspace}:/app`, imageName,
+        'mono', '/omnisharp-roslyn/artifacts/publish/OmniSharp.Stdio/mono/OmniSharp.exe'
+    ];
+    const process = spawn('docker', [...dockerArgs, ...omnisharpArgs, '-s', '/app'], { detached: false, cwd: cwd });
+
+    return {
+        process,
+        command: 'docker',
+        usingMono: true
+    };
+}
+
+// export function hasDocker(): Promise<boolean> {
+//     // TODO: Check if docker is present.
+// }
 
 function launchNixMono(launchPath: string, cwd: string, args: string[]): Promise<LaunchResult> {
     return canLaunchMono()

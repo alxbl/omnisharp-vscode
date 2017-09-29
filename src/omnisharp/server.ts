@@ -243,7 +243,7 @@ export class OmniSharpServer {
         const solutionPath = launchTarget.target;
         const cwd = path.dirname(solutionPath);
         this._options = Options.Read();
-        
+
         let args = [
             '-s', solutionPath,
             '--hostPID', process.pid.toString(),
@@ -495,7 +495,13 @@ export class OmniSharpServer {
         return promise;
     }
 
-    private _onLineReceived(line: string) {
+    private _onLineReceived(l: string) {
+
+        let line = l;
+        if (this._options.useDocker) { // See if this could go at a lower level (path-aware)
+            line = l.replace(/\/app/, this._launchTarget.target); // `/app` is very generic, and likely to cause issues with a broad find/replace.
+        }
+
         if (line[0] !== '{') {
             this._logger.appendLine(line);
             return;
@@ -579,7 +585,11 @@ export class OmniSharpServer {
             this._logger.appendLine();
         }
 
-        this._serverProcess.stdin.write(JSON.stringify(requestPacket) + '\n');
+        let json = JSON.stringify(requestPacket);
+        if (this._options.useDocker) {
+            json = json.replace(this._launchTarget.target, '/app');
+        }
+        this._serverProcess.stdin.write(json + '\n');
 
         return id;
     }

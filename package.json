@@ -334,6 +334,16 @@
           "default": false,
           "description": "Launch OmniSharp with Mono."
         },
+        "omnisharp.docker.enabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "Use docker to run the OmniSharp server. (experimental)"
+        },
+        "omnisharp.docker.image": {
+            "type": "string",
+            "default": "alxbl/omnisharp-roslyn",
+            "description": "Specifies which docker image to run."
+        },
         "omnisharp.waitForDebugger": {
           "type": "boolean",
           "default": false,
