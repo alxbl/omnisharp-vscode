@@ -498,7 +498,7 @@ export class OmniSharpServer {
     private _onLineReceived(l: string) {
 
         let line = l;
-        if (this._options.useDocker) { // See if this could go at a lower level (path-aware)
+        if (this._options.docker.enabled) { // See if this could go at a lower level (path-aware)
             line = l.replace(/\/app/, this._launchTarget.target); // `/app` is very generic, and likely to cause issues with a broad find/replace.
         }
 
@@ -586,7 +586,7 @@ export class OmniSharpServer {
         }
 
         let json = JSON.stringify(requestPacket);
-        if (this._options.useDocker) {
+        if (this._options.docker.enabled) {
             json = json.replace(this._launchTarget.target, '/app');
         }
         this._serverProcess.stdin.write(json + '\n');

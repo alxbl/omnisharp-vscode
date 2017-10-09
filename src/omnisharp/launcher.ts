@@ -192,8 +192,8 @@ function launch(cwd: string, args: string[]): Promise<LaunchResult> {
             args.push(`formattingOptions:indentationSize=${getConfigurationValue(globalConfig, csharpConfig, 'editor.tabSize', 4)}`);
         }
 
-        if (options.useDocker) {
-            return launchDocker(options.dockerImage, cwd, args);
+        if (options.docker.enabled) {
+            return launchDocker(options.docker.image, options.docker.containerName, cwd, args);
         }
 
         if (options.path && options.useMono) {
@@ -271,10 +271,10 @@ function launchNix(launchPath: string, cwd: string, args: string[]): LaunchResul
     };
 }
 
-function launchDocker(imageName: string, cwd: string, args: string[]): LaunchResult {
+function launchDocker(imageName: string, containerName: string, cwd: string, args: string[]): LaunchResult {
     const [, workspace, ...omnisharpArgs] = args;
     const dockerArgs = [
-        'run', '--rm', '-i', '--pid=host', '-v', `${workspace}:/app`, imageName,
+        'run', '--rm', '--name', containerName, '-i', '--pid=host', '-v', `${workspace}:/app`, imageName,
         'mono', '/omnisharp-roslyn/artifacts/publish/OmniSharp.Stdio/mono/OmniSharp.exe'
     ];
     const process = spawn('docker', [...dockerArgs, ...omnisharpArgs, '-s', '/app'], { detached: false, cwd: cwd });

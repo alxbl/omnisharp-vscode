@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
+import { DockerOptions } from './docker';
 
 export class Options {
     constructor(
@@ -16,8 +17,7 @@ export class Options {
         public maxProjectResults?: number,
         public useEditorFormattingSettings?: boolean,
         public useFormatting?: boolean,
-        public useDocker?: boolean,
-        public dockerImage?: string) { }
+        public docker?: DockerOptions) { }
 
     public static Read(): Options {
         // Extra effort is taken below to ensure that legacy versions of options
@@ -53,10 +53,11 @@ export class Options {
 
         const useFormatting = csharpConfig.get<boolean>('format.enable', true);
 
-        const useDocker = omnisharpConfig.get<boolean>('docker.enabled', false);
-        const dockerImage = omnisharpConfig.get<string>('docker.image', 'alxbl/omnisharp-roslyn'); // Should eventually be an omnisharp-maintained image.
-
-        return new Options(path, useMono, waitForDebugger, loggingLevel, autoStart, projectLoadTimeout, maxProjectResults, useEditorFormattingSettings, useFormatting,
-            useDocker, dockerImage);
+        const dockerOptions = DockerOptions.Read();
+        return new Options(path, useMono,
+            waitForDebugger, loggingLevel,
+            autoStart, projectLoadTimeout,
+            maxProjectResults, useEditorFormattingSettings,
+            useFormatting, dockerOptions);
     }
 }
