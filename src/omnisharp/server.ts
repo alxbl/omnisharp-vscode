@@ -495,13 +495,7 @@ export class OmniSharpServer {
         return promise;
     }
 
-    private _onLineReceived(l: string) {
-
-        let line = l;
-        if (this._options.docker.enabled) { // See if this could go at a lower level (path-aware)
-            line = l.replace(/\/app/, this._launchTarget.target); // `/app` is very generic, and likely to cause issues with a broad find/replace.
-        }
-
+    private _onLineReceived(line: string) {
         if (line[0] !== '{') {
             this._logger.appendLine(line);
             return;
@@ -586,9 +580,6 @@ export class OmniSharpServer {
         }
 
         let json = JSON.stringify(requestPacket);
-        if (this._options.docker.enabled) {
-            json = json.replace(this._launchTarget.target, '/app');
-        }
         this._serverProcess.stdin.write(json + '\n');
 
         return id;

@@ -274,10 +274,12 @@ function launchNix(launchPath: string, cwd: string, args: string[]): LaunchResul
 function launchDocker(imageName: string, containerName: string, cwd: string, args: string[]): LaunchResult {
     const [, workspace, ...omnisharpArgs] = args;
     const dockerArgs = [
-        'run', '--rm', '--name', containerName, '-i', '--pid=host', '-v', `${workspace}:/app`, imageName,
+        'run', '--rm', '--name', containerName, '-i', '--pid=host',
+        '-v', `${workspace}:${workspace}`, '-w', workspace, // Map workspace 1:1 in container and set as working directory.
+        imageName,
         'mono', '/omnisharp-roslyn/artifacts/publish/OmniSharp.Stdio/mono/OmniSharp.exe'
     ];
-    const process = spawn('docker', [...dockerArgs, ...omnisharpArgs, '-s', '/app'], { detached: false, cwd: cwd });
+    const process = spawn('docker', [...dockerArgs, ...omnisharpArgs, '-s', workspace], { detached: false, cwd: cwd });
 
     return {
         process,
