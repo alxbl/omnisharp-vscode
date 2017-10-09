@@ -79,7 +79,7 @@ interface Command {
     execute(): Thenable<any>;
 }
 
-function projectsToCommands(projects: protocol.ProjectDescriptor[]): Promise<Command>[] {
+function projectsToCommands(server: OmniSharpServer, projects: protocol.ProjectDescriptor[]): Promise<Command>[] {
     return projects.map(project => {
         let projectDirectory = project.Directory;
 
@@ -97,7 +97,7 @@ function projectsToCommands(projects: protocol.ProjectDescriptor[]): Promise<Com
                     label: `dotnet restore - (${project.Name || path.basename(project.Directory)})`,
                     description: projectDirectory,
                     execute() {
-                        return dotnetRestore(projectDirectory);
+                        return dotnetRestore(server, projectDirectory);
                     }
                 });
             });
@@ -119,7 +119,7 @@ export function dotnetRestoreAllProjects(server: OmniSharpServer) {
             return Promise.reject("No .NET Core projects found");
         }
 
-        let commandPromises = projectsToCommands(descriptors);
+        let commandPromises = projectsToCommands(server, descriptors);
 
         return Promise.all(commandPromises).then(commands => {
             return vscode.window.showQuickPick(commands);
@@ -147,25 +147,24 @@ export function dotnetRestoreForProject(server: OmniSharpServer, filePath: strin
 
         for (let descriptor of descriptors) {
             if (descriptor.FilePath === filePath) {
-                return dotnetRestore(descriptor.Directory, filePath);
+                return dotnetRestore(server, descriptor.Directory, filePath);
             }
         }
     });
 }
 
-function dotnetRestore(cwd: string, filePath?: string) {
+function dotnetRestore(server: OmniSharpServer, cwd: string, filePath?: string) {
     return new Promise<void>((resolve, reject) => {
         channel.clear();
         channel.show();
 
-        let cmd = 'dotnet';
         let args = ['restore'];
 
         if (filePath) {
             args.push(filePath);
         }
 
-        let dotnet = cp.spawn(cmd, args, { cwd: cwd, env: process.env });
+        let dotnet = server.runDotNet(args, cwd);
 
         function handleData(stream: NodeJS.ReadableStream) {
             stream.on('data', chunk => {

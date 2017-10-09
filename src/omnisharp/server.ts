@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { EventEmitter } from 'events';
-import { ChildProcess, exec } from 'child_process';
+import { ChildProcess, exec, spawn } from 'child_process';
 import { ReadLine, createInterface } from 'readline';
 import { launchOmniSharp } from './launcher';
 import { Options } from './options';
@@ -98,6 +98,21 @@ export class OmniSharpServer {
 
     public isRunning(): boolean {
         return this._state === ServerState.Started;
+    }
+
+    public runDotNet(dotnetArgs: string[], cwd: string): ChildProcess {
+        let cmd: string;
+        let args: string[];
+        if (!this._options.docker.enabled) {
+            // Docker is not enabled: just try `dotnet` on the PATH.
+            cmd = 'dotnet';
+            args = dotnetArgs;
+        } else {
+            // Docker is enabled: Build the docker command.
+            cmd = 'docker';
+            args = ['exec', '-i', this._options.docker.containerName, '/omnisharp-roslyn/.dotnet/dotnet', ...dotnetArgs];
+        }
+        return spawn(cmd, args, { cwd: cwd, env: process.env });
     }
 
     private _getState(): ServerState {

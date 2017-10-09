@@ -344,6 +344,11 @@
             "default": "alxbl/omnisharp-roslyn",
             "description": "Specifies which docker image to run."
         },
+        "omnisharp.docker.containerName": {
+            "type": "string",
+            "default": "omnisharp_vscode_svc",
+            "description": "The name of the docker container that omnisharp-vscode will spawn. It should be unique."
+        },
         "omnisharp.waitForDebugger": {
           "type": "boolean",
           "default": false,
